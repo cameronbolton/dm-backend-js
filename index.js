@@ -1,20 +1,24 @@
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 3000
+const MongoClient = require('mongodb').MongoClient;
 
-var LoremIpsum = require('lorem-ipsum').LoremIpsum;
+async function main() {
+    const uri = process.env['DATABASE_URL'];
+    let client = new MongoClient(uri);
 
-var lorem = new LoremIpsum({
-  sentencesPerParagraph: {
-    max: 8,
-    min: 4
-  },
-  wordsPerSentence: {
-    max: 16,
-    min: 4
-  }
-});
+    let data = { "name":"cbolton" };
+    try {
+        await client.connect();
+        await client.db("dm-db").collection("test").insertOne(data);
+        console.log(`added ${data} to database.`);
+        return { ok: true };
+    } catch (e) {
+        console.error(e);
+        return {
+            "body": { "error": "There was a problem adding the data to the database." },
+            "statusCode": 400
+        };
+    } finally {
+        await client.close();
+    }
+}
 
-app.get('/', (req, res) => res.send(lorem.generateParagraphs(7)))
-
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+module.exports.main = main;
